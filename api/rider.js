@@ -2,18 +2,17 @@ const express = require('express');
 const router = express.Router();
 
 module.exports = router;
-
-// class UserPostRequest {
-//     constructor(UID ,tel, pass, name, address, GPS, img) {
-//         this.UID = UID,
-//         this.tel = tel;
-//         this.pass = pass;
-//         this.name = name;
-//         this.address = address;
-//         this.GPS = GPS;
-//         this.img = img;
-//     }
-// }
+class RiderPortRequest {
+    constructor(RID ,tel, pass, name, address, license_plate, img) {
+        this.UID = UID,
+        this.tel = tel;
+        this.pass = pass;
+        this.name = name;
+        this.address = address;
+        this.license_plate = license_plate;
+        this.img = img;
+    }
+}
 
 router.get('/getAll', (req, res) => {
     const db = req.db; // รับ db จาก req
@@ -88,32 +87,32 @@ router.delete('/del/:id', (req, res) => {
     });
 });
 
-// router.put("/update/:id", (req, res) => {
-//     const db = req.db;
-//     let id = +req.params.id;
-//     let User = new UserPostRequest(
-//         id,
-//         req.body.tel,
-//         req.body.pass,
-//         req.body.name,
-//         req.body.address,
-//         req.body.GPS,
-//         req.body.img,
-//     )
-//     let sql =
-//         "UPDATE user set `tel`=?, `pass`=?, `name`=?, `address`=?, `GPS`=?, `img`=? where `UID`=?";
-//     db.run(sql, [
-//         User.tel,
-//         User.pass,
-//         User.name,
-//         User.address,
-//         User.GPS,
-//         User.img,
-//         id
-//     ], function (err) {
-//             if (err) {
-//                 return res.status(400).json({ message: 'Error inserting user', error: err.message });
-//             }
-//             res.status(201).json({ message: 'User Updated successfully', uid: id });
-//         });
-// });
+router.put("/update/:id", (req, res) => {
+    const db = req.db;
+    let id = +req.params.id;
+    let User = new RiderPortRequest(
+        id,
+        req.body.tel,
+        req.body.pass,
+        req.body.name,
+        req.body.address,
+        req.body.license_plate,
+        req.body.img,
+    )
+    let sql =
+        "UPDATE rider set `tel`=?, `pass`=?, `name`=?, `address`=?, `license_plate`=?, `img`=? where `RID`=?";
+    db.run(sql, [
+        User.tel,
+        User.pass,
+        User.name,
+        User.address,
+        User.license_plate,
+        User.img,
+        id
+    ], function (err) {
+            if (err) {
+                return res.status(400).json({ message: 'Error inserting user', error: err.message });
+            }
+            res.status(201).json({ message: 'rider Updated successfully', uid: id });
+        });
+});

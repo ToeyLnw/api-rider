@@ -36,9 +36,9 @@ const giveCurrentDateTime = () => {
 router.post("/", upload.single("filename"), async (req, res) => {
     console.log("file");
   try {
-    const dateTime = giveCurrentDateTime();
-    const fileName = req.file.originalname + " " + dateTime;
-
+    // const dateTime = giveCurrentDateTime();
+    // const fileName = req.file.originalname + " " + dateTime;
+    const fileName = req.file.originalname
     // สร้าง Reference ไปยังตำแหน่งใน Firebase Storage
     const storageRef = ref(storage, `files/${fileName}`);
 

@@ -4,9 +4,9 @@ const router = express.Router();
 module.exports = router;
 
 class UserPostRequest {
-    constructor(UID ,tel, pass, name, address, img) {
+    constructor(UID, tel, pass, name, address, img) {
         this.UID = UID,
-        this.tel = tel;
+            this.tel = tel;
         this.pass = pass;
         this.name = name;
         this.address = address;
@@ -40,6 +40,24 @@ router.get('/find/:id', (req, res) => {
     });
 });
 
+router.get('/findtel/:tel', (req, res) => {
+    const db = req.db;
+    let tel = req.params.tel; // ไม่ต้องแปลงเป็นตัวเลข
+    console.log(tel);
+    
+    db.all(`SELECT * FROM user WHERE tel = ?`, [tel], (err, result) => {
+        if (err) {
+            console.error('Database error:', err.message);
+            return res.status(500).json({ message: 'Database error', error: err.message });
+        }
+        if (result.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        return res.status(200).json(result);
+    });
+});
+
+
 router.post('/add', (req, res) => {
     const db = req.db;
     const { tel, pass, name, address, img } = req.body;
@@ -49,28 +67,53 @@ router.post('/add', (req, res) => {
     //   return res.status(400).json({ message: 'Please provide all required fields: name, phone, password, address, gps' });
     // }
 
+    db.all(`SELECT count(*) AS count FROM user WHERE tel = ? 
+        UNION 
+        SELECT count(*) AS count FROM rider WHERE tel = ?`, [tel, tel], function (err, results) {
+        if (err) {
+            return res.status(500).json({ message: 'Database error', error: err.message });
+        }
+
+        // ตรวจสอบผลลัพธ์จากทั้งสองตาราง
+        const totalCount = results.reduce((sum, row) => sum + row.count, 0);
+
+        if (totalCount > 0) {
+            return res.status(400).json({ message: 'This phone already exists' });
+        } else {
+            // ถ้าไม่มีข้อมูลซ้ำ ทำการบันทึกข้อมูลใหม่
+            db.run(`INSERT INTO user (tel, pass, name, address, GPS, img) VALUES (?, ?, ?, ?, ?, ?)`,
+                [tel, pass, name, address, "", img], function (err) {
+                    if (err) {
+                        return res.status(400).json({ message: 'Error inserting user', error: err.message });
+                    }
+                    res.json({ message: 'User added successfully', uid: this.lastID });
+                });
+        }
+    });
     // เพิ่มข้อมูลผู้ใช้ใหม่เข้าไปในตาราง users
-    db.run(`INSERT INTO user (tel, pass, name, address, GPS, img) VALUES (?, ?, ?, ?, ?, ?)`,
-        [tel, pass, name, address, "", img], function (err) {
-            if (err) {
-                return res.status(400).json({ message: 'Error inserting user', error: err.message });
-            }
-            res.json({ message: 'User added successfully', uid: this.lastID });
-        });
 });
 
 router.delete('/del/:id', (req, res) => {
     const db = req.db;
     let id = +req.params.id;
 
-    db.run(`DELETE FROM user where UID = ?`, [id], (err, result) => {
-        if (err) throw err;
-        return res.status(200).json({
-            message: 'User deleted successfully naja!',
-            affected_row: result.affectedRows
-        });
+    db.run(`DELETE FROM user WHERE UID = ?`, [id], function (err) {
+        if (err) {
+            return res.status(500).json({ message: 'Error deleting user', error: err.message });
+        }
+
+        // ตรวจสอบว่ามีแถวที่ถูกลบหรือไม่
+        if (this.changes > 0) {
+            return res.status(200).json({
+                message: 'User deleted successfully naja!',
+                affected_row: this.changes
+            });
+        } else {
+            return res.status(404).json({ message: 'User not found' });
+        }
     });
 });
+
 
 router.put("/update/:id", (req, res) => {
     const db = req.db;
@@ -95,11 +138,11 @@ router.put("/update/:id", (req, res) => {
         User.img,
         id
     ], function (err) {
-            if (err) {
-                return res.status(400).json({ message: 'Error inserting user', error: err.message });
-            }
-            res.status(201).json({ message: 'User Updated successfully', uid: id });
-        });
+        if (err) {
+            return res.status(400).json({ message: 'Error inserting user', error: err.message });
+        }
+        res.status(201).json({ message: 'User Updated successfully', uid: id });
+    });
 });
 
 router.get("/", (req, res) => {

@@ -122,3 +122,30 @@ router.put("/update/:id", (req, res) => {
             res.status(201).json({ message: 'Order Updated successfully', OID: id });
         });
 });
+
+router.get('/details/:id', (req, res) => {
+    const db = req.db;
+    let id = +req.params.id;
+
+    db.all(`SELECT orderITEM.*, 
+       sender.name AS sender_name, 
+       receiver.name AS receiver_name,
+       CASE 
+           WHEN orderITEM.status = 1 THEN 'รอไรเดอร์มารับสินค้า'
+           WHEN orderITEM.status = 2 THEN 'ไรเดอร์รับงานแล้ว'
+           WHEN orderITEM.status = 3 THEN 'ไรเดอร์กำลังเดินทาง'
+           WHEN orderITEM.status = 4 THEN 'ไรเดอร์ส่งสินค้าแล้ว'
+           ELSE 'ไม่ทราบสถานะ'
+        END AS status_message
+        FROM orderITEM
+        JOIN user AS sender ON orderITEM.senderID = sender.UID
+        JOIN user AS receiver ON orderITEM.recieverID = receiver.UID
+        WHERE orderITEM.OID = ?;`, 
+            [id], (err, result) => {
+        if (err) throw err;
+        if (result.length <= 0) {
+            return res.status(404).json({ message: 'ไม่มีข้อมูลสำหรับ ID นี้' });
+        }
+        return res.status(200).json(result);
+    });
+});
